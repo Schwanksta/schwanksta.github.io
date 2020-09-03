@@ -1,0 +1,47 @@
+html {
+	font-size: 16px;
+}
+body { 
+	font-family: Iowan Old Style, Apple Garamond, Baskerville, Times New Roman, Droid Serif, Times, Source Serif Pro, serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol ; 
+}
+p {
+	font-size: 1.2rem;
+	line-height:1.8rem;
+}
+p.byline { text-align: center ;}
+div.well { 
+	max-width:600px;
+	margin: 0px auto;
+}
+h1.title {
+	text-align: center;
+	font-weight: 600;
+	font-size: 4rem;
+	margin:10px;
+	line-height: 4rem;
+}
+h2.month {
+	text-align: center;
+	text-transform: uppercase;
+	font-weight: 800;
+	font-size: 1.5rem;
+}
+h3.day {
+	font-weight: 500;
+	font-size: 1.8rem;
+}
+#map { 
+	height: 600px;
+	max-width: 600px;
+	margin: 0px auto;
+	margin-bottom: 10px;
+}
+.mapboxgl-popup-content p, strong{
+	line-height:1.1rem;
+	font-size: 1rem;
+}
+
+@media (max-width:768px){
+	body { }
+	#map { height: 400px;}
+}

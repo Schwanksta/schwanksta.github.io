@@ -1,0 +1,153 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Brooklyn Shootings</title>
+  <meta name="description" content="Brooklyn Shootings">
+  <meta name="author" content="Ken Schwencke">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css?v=2.0">
+
+</head>
+
+<body>
+	<h1 class="title">Brooklyn Shootings</h1>
+
+	<div class="well">
+	<p class="byline">By Ken Schwencke. <span class="update">Most recent incident: {{ shootings.0.datetime|dateformat("%A, %b %d") }}</span></p>
+	</div>
+	<div id="map"></div>
+
+	<div class="well">
+	<p>
+		This is an attempt to compile two different NYPD data sources — their 
+		quarterly shootings data, as well as more recent data from COMPSTAT — about
+		shootings in Brooklyn. Shootings after June 30th come from COMPSTAT and have very 
+		little information.
+	</p>
+	
+	{% set months = { 'current': '', 'last':'' } %}
+	{% set days = { 'current': '', 'last':'' } %}
+
+	{% for incident in shootings %}
+	   {% if months.update( {'current': incident.datetime|dateformat("%B")} ) %}{% endif %}
+	   {% if days.update( {'current': incident.datetime|dateformat("%A, %b %d")} ) %}{% endif %}
+
+	   {% if months.get('current') != months.get('last') %}
+	        <h2 class="month">{{ months.get('current') }}</h2>
+	        {% if months.update({'last': incident.datetime|dateformat("%B") }) %}{% endif %}
+	    {% endif %}
+	    {% if days.get('current') != days.get('last') %}
+	    	</ul>
+	        <h3 class="day">{{ days.get('current') }}</h3>
+	       	{% if days.update({'last': incident.datetime|dateformat("%A, %b %d") }) %}{% endif %}
+	       	<ul>
+
+	    {% endif %}
+	    <li><p class="{{ incident.incident_key }}">
+	    {% if incident.quarterly %}
+		    {% if incident.vic_race or incident.vic_sex %}
+		     	A {{incident.vic_race}} {% if incident.vic_sex %}{{incident.vic_sex|sex2word(incident.vic_age_group)}}{% else %}person{% endif %} was {% if incident.homicide %}shot and killed{% else %}shot{% endif %} in {{ incident.hood }} {{ incident.streets|streets}}, in the {{ incident.precinct|ordinal }} precinct, at {{ incident.datetime|dateformat("%-I:%M %p") }}.
+			{% else %}
+		    	At least one person was shot in {{ incident.hood }} {{ incident.streets|streets}}, in the {{ incident.precinct|ordinal }} precinct, at {{ incident.datetime|dateformat("%-I:%M %p") }} {% if incident.homicide %}where at least one person was killed{% endif %}.
+		    {% endif %}
+	    {% else %}
+	    	At least one person was {% if incident.homicide %}shot and killed{% else %}shot{% endif %} in {{ incident.hood }} {{ incident.streets|streets}}, in the {{ incident.precinct|ordinal }} precinct, around {{ incident.datetime|dateformat("%-I%p") }}.
+		{% endif %}
+		</p></li>
+	{% endfor %}
+
+	</div>
+	<script>
+	mapboxgl.accessToken = 'pk.eyJ1Ijoic2Nod2Fua3N0YSIsImEiOiIwTXZySHdVIn0.2RSD-PKkyPIboteVeFcZ2g';
+	var map = new mapboxgl.Map({
+		container: 'map',
+		style: 'mapbox://styles/schwanksta/ckehdk76h0qqf19rlw329ejyi',
+		center: [-73.95,40.655],
+		zoom: 10.9,
+		scrollZoom: false,
+		mapControls: true
+	});
+	map.addControl(new mapboxgl.NavigationControl({showCompass: false}), 'bottom-right');
+	map.on('load', function() {
+		var popup = new mapboxgl.Popup({
+		closeButton: false,
+		closeOnClick: false
+		});
+		map.addSource('shootings', { type: 'geojson', data: 'js/shootings_combined.geojson?v=2' });
+		map.addLayer({
+			'id': 'shootings',
+			'type': 'circle',
+			'source': 'shootings',
+			'paint': {
+				// make circles larger as the user zooms from z12 to z22
+				'circle-radius': {
+					'base': 2,
+					'stops': [
+					[10, 2.5],
+					[20.5, 180]
+					]
+				},
+				'circle-stroke-width': {
+					'base': 2.1,
+					'stops': [
+					[10, 1],
+					[20.5, 100]
+					]
+				},
+				'circle-stroke-color': [
+					'match',
+					['get', 'homicide_str'],
+					'true',
+					'black',
+					'false',
+					'red',
+					'red'
+				],
+				'circle-color': 'red'
+			}
+		});
+
+		function mouseOn(e) {
+			// Change the cursor style as a UI indicator.
+			map.getCanvas().style.cursor = 'pointer';
+			var feat = e.features[0];
+			var ptags = document.getElementsByClassName(feat.properties.incident_key);
+			var coordinates = feat.geometry.coordinates.slice();
+			var description = Array.prototype.reduce.call(ptags, (acc, val) => acc + "<p>" + val.innerHTML + "</p>", "<strong>" + new Date(feat.properties.datetime).toLocaleDateString() + "</strong>");
+			 
+			// Ensure that if the map is zoomed out such that multiple
+			// copies of the feature are visible, the popup appears
+			// over the copy being pointed to.
+			while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+				coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+			}
+			 
+			// Populate the popup and set its coordinates
+			// based on the feature found.
+			popup
+				.setLngLat(coordinates)
+				.setHTML(description)
+				.addTo(map);
+		}
+		function mouseOff() {
+			map.getCanvas().style.cursor = '';
+			popup.remove();
+		}
+		map
+			.on('mouseenter', 'shootings', mouseOn)
+			.on('click', 'shootings', mouseOn);
+			 
+		map
+			.on('mouseleave', 'shootings', mouseOff)
+			//.on('click', 'shootings', mouseOff);
+
+	})
+</script>
+</body>
+</html>
