@@ -19,7 +19,7 @@
 	<h1 class="title">Brooklyn Shootings</h1>
 
 	<div class="well">
-	<p class="byline">By Ken Schwencke. <span class="update">Most recent incident: {{ shootings.0.datetime|dateformat("%A, %b %d") }}</span></p>
+	<p class="byline">By Ken Schwencke. <span class="update">Recent as of: {{ shootings.0.datetime|dateformat("%A, %b %d") }}. Updated weekly.</span></p>
 	</div>
 	<div id="map"></div>
 
