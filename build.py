@@ -10,7 +10,7 @@ def dateformat(value, format="%d %b %Y %I:%M %p"):
 
 def streets(street):
     if len(street) == 1:
-        return 'on %s' % street[0]
+        return 'near %s' % street[0]
     if len(street) == 2:
         return 'near %s and %s' % (street[0], street[1])
     return ''
