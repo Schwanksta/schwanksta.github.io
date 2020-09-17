@@ -80,3 +80,20 @@ with open("templates/js/shootings_combined.geojson", "w") as f2:
     "type": "FeatureCollection",
     "features": final
   }))
+
+
+with open("data/bknorth_yoy.json") as f:
+	bknorth = [(int(year.get("SeriesLabel")), year.get("Value")) for year in json.loads(f.read())]
+
+
+with open("data/bksouth_yoy.json") as f:
+	bksouth = [(int(year.get("SeriesLabel")), year.get("Value")) for year in json.loads(f.read())]
+
+
+combined = []
+for i, nyear in enumerate(bknorth):
+	combined.append((nyear[0], nyear[1]+bksouth[i][1]))
+
+with open("templates/js/brooklyn_yoy.json", "w") as f:
+	f.write(json.dumps(combined))
+
